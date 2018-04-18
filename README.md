@@ -28,26 +28,27 @@ Los índices serían los siguientes:
 Algunos ejemplos que escribí:
 
 
-estaba equivocado, 13
-chistoso, 0
-me gusta cuando la gente sonríe, 0
-estoy impresionado por tu trabajo en este proyecto, 7
-vamos a comer juntos, 3
-que momento tan divertido, 0
-estuvo aburrido, 1
-que evento tan aburrido, 1
-te extraño, 4
-sigo enamorado, 4
-estoy feliz con mi novia, 4
-estoy muy frustrado, 2
-que buena broma, 0
-el portero apesta, 11
-el cruz azul juega muy mal, 11
-quiero ir de vacaciones, 12
-extraño ir a la playa, 12
-me gusta cancún, 12
-estuve en manzanillo, 12
-muy buen postre, 15
+* estaba equivocado, 13
+* chistoso, 0
+* me gusta cuando la gente sonríe, 0
+* estoy impresionado por tu trabajo en este proyecto, 7
+* vamos a comer juntos, 3
+* que momento tan divertido, 0
+* estuvo aburrido, 1
+* que evento tan aburrido, 1
+* te extraño, 4
+* sigo enamorado, 4
+* estoy feliz con mi novia, 4
+* estoy muy frustrado, 2
+* que buena broma, 0
+* el portero apesta, 11
+* el cruz azul juega muy mal, 11
+* quiero ir de vacaciones, 12
+* extraño ir a la playa, 12
+* me gusta cancún, 12
+* estuve en manzanillo, 12
+* muy buen postre, 15
+
 
 ## TODO
 
