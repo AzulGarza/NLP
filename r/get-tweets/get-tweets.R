@@ -5,8 +5,9 @@
 
 # Paquetes ----------------------------------------------------------------
 
-pacman::p_load(tidyverse, rtweet, tidytext, install = F) # Si no se tienen los paquetes
-                                               # Cambiar a install = F
+pacman::p_load(tidyverse, rtweet, tidytext, install = F) 
+                                        # Si no se tienen los paquetes
+                                        # Cambiar a install = F
 
 
 
@@ -16,21 +17,24 @@ pacman::p_load(tidyverse, rtweet, tidytext, install = F) # Si no se tienen los p
 appname <- "tweets-emojis"
 
 # Key
-key <- #POner
+key <- 
 
 # Secret
-secret <- #Poner
+secret <- 
 
 # Token
-twitter_token <- create_token(
-  app = appname,
-  consumer_key = key,
-  consumer_secret = secret)
+twitter_token <- 
+  create_token(
+    app = appname,
+    consumer_key = key,
+    consumer_secret = secret
+  )
 
 
 # Datos de emojis ---------------------------------------------------------
 
-emojis_m <- rtweet::emojis %>% 
+emojis_m <- 
+  rtweet::emojis %>% 
   mutate(
     clave = case_when(
       description == "grinning face" ~ 0,  
@@ -56,64 +60,99 @@ emojis_m <- rtweet::emojis %>%
 
 # Función para convertir emojis
 convert_emoji <- function(emoji){
-  iconv(emoji, from = "latin1", to = "ascii", sub = "byte")
+  iconv(emoji, from = "latin1", to = "ASCII", sub = "byte")
 }
 
 # Función para reconvetir emojis
 reconvert_emoji <- function(emoji){
-  iconv(emoji, from = "ascii", to = "latin1", sub = "byte")
+  iconv(emoji, from = "UTF-8", to = "latin1", sub = "byte")
 }
 
 # Emojis para filtrar,
 # los que se acordaron en github
-emojis_find <- emojis_m %>% 
+emojis_find <- 
+  emojis_m %>% 
   pull(code) %>% 
   str_c(collapse = "|")
 
 # Emojis totales
-emojis_tot <- emojis %>% 
+emojis_tot <- 
+  rtweet::emojis %>% 
   pull(code) %>% 
-  convert_emoji %>% 
-  str_c(collapse = "|")
+  #convert_emoji %>% 
+  str_c(collapse = "|") 
 
 
 
-# Obtención de tweets -----------------------------------------------------
+# funcion de tweets -------------------------------------------------------
 
-raw_tweets <- search_tweets(
-    "#", n = 18000, lang = "es",  include_rts = F, 
-    retryonratelimit = T
-  )
+get_clean_tweets <- function(emoji_code){
+  # Con esta funciòn obtenemos la base con el texto
+  # y el emoji 
+  # Obtención de tweets -----------------------------------------------------
+  
+  raw_tweets <- 
+    search_tweets(
+      emoji_code, n = 500, lang = "es",  include_rts = F#, 
+      #retryonratelimit = T
+    )
+  
+  
+  # Mmodificamos los tweets -------------------------------------------------
+  
+  tidy_tweets <- 
+    raw_tweets %>% 
+    select(text) %>% 
+    mutate(
+      clean_text = str_replace_all(
+        text, 
+        "https://t.co/[A-Za-z\\d]+|http://[A-Za-z\\d]+|&amp;|&lt;|&gt;|RT|https|@\\w+|#\\w+", 
+        ""
+      ),
+      clean_text = stringi::stri_trans_general(clean_text, "Latin-ASCII"),
+      clean_text = iconv(clean_text, from = "latin1", to = "ASCII", sub = ""),
+      clean_text = str_replace_all(clean_text, "[ \t]{2,}", " "), # Espacios
+      clean_text = str_replace_all(clean_text, "^\\s+|\\s+$", ""),
+      clean_text = str_replace_all(clean_text, "[[:punct:]]", ""),
+      clean_text = str_replace_all(clean_text, "[[:digit:]]", ""),
+      clean_text = str_to_lower(clean_text)
+    ) %>% 
+    mutate(text_plane = convert_emoji(text)) 
+  
+  
+  # Obtenemos los tweets que poseen los emojis que nos interesan
+  
+  emoji_tweets <- 
+    tidy_tweets %>% 
+    filter(str_detect(text, regex(emojis_find))) %>% 
+    mutate(
+      emoji = str_extract(text, regex(emojis_find)) #%>% 
+      #as_data_frame %>% 
+      #unite(emojis, sep = "", remove = T) %>% 
+      #pull(emojis)#,
+      #n_emojis = str_length(emojis)
+    ) %>% 
+    left_join(
+      emojis_m,
+      by = c("emoji" = "code")
+    ) %>% 
+    select(clean_text, clave) 
+  
+  return(emoji_tweets)
+}
+
+data_tweets_emojis <- 
+  emojis_m$code %>% 
+  map_dfr(get_clean_tweets)
+
+data_tweets_emojis %>% 
+  write_csv("train-emoji-2.csv")
 
 
-# Mmodificamos los tweets -------------------------------------------------
-
-tidy_tweets <- raw_tweets %>% 
-  mutate_at(
-    vars(text),
-    ~str_replace_all(., "https://t.co/[A-Za-z\\d]+|http://[A-Za-z\\d]+|&amp;|&lt;|&gt;|RT|https|@\\w+|#\\w+", "")
-  ) %>% 
-  mutate(text_plane = convert_emoji(text))
-
-# Obtenemos los tweets que poseen los emojis que nos interesan
-
-tidy_tweets %>% 
-  filter(str_detect(text, regex(emojis_find))) %>% 
-  mutate(
-    text_sin_emojis = str_remove_all(text_plane, regex(emojis_find)),
-    emojis = str_extract_all(text, regex(emojis_find), simplify = T) %>% 
-      as_data_frame %>% 
-      unite(emojis, sep = "", remove = T) %>% 
-      pull(emojis),
-    n_emojis = str_length(emojis)
-  ) %>% 
-  select(original = text, text_sin_emojis, emojis, n_emojis) %>% 
-  mutate(text_clean = reconvert_emoji(text_sin_emojis)) %>% 
-  filter(!n_emojis > 1) %>% 
+read_csv("train-emoji.csv") %>% 
   full_join(
-    emojis_m,
-    by = c("emojis" = "code")
+    read_csv("train-emoji-2.csv")
   ) %>% 
-  drop_na %>% 
-  select(text_clean, clave) %>% 
-  write_csv("../../data/train_tweets.csv")
+  distinct() %>% 
+  write_csv("train-emoji-3.csv")
+  

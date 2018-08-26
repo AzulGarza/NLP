@@ -1,0 +1,58 @@
+<html>
+  <head>
+    <!-- Load TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"> </script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    
+  </head>
+
+  <body>
+      <div>
+          <input type="text" oninput="write_sentiment()" id="sentiment-input">
+          
+      </div>
+      
+      <div>
+          <p id="sentiment-output"></p>
+      </div>
+      <script>
+      
+      var my_sentiment = document.getElementById("sentiment-input").textContent;   
+
+      async function my_model() {
+          const model = await tf.loadModel('user_satisfaction_network/model.json');
+          
+          return model
+      }
+          
+      function write_sentiment(){
+          var my_sentiment = document.getElementById("sentiment-input").value; 
+          document.getElementById("sentiment-output").textContent = "Sentimiento detectado: " + my_sentiment;
+      }
+      
+
+      var mean_test = [];
+      var mean_test_tensor = [];
+
+      d3.csv("mean_test.csv").then(
+        function(data){
+
+          data.map(function(d){
+            mean_test.push(+d.value);
+          });
+            
+          mean_test_tensor = tf.tensor(mean_test, [1, mean_test.length]);
+            
+          my_model().then(model => {
+              const prediction = model.predict(mean_test_tensor);
+              const value_pred = prediction.dataSync()[0];
+              var satisfied = (value_pred == 0) ? "insatisfecho" : "satisfecho" 
+              const output_sent = "El modelo predice que el usuario con esas características está " + satisfied;
+              console.log(output_sent);
+          });
+        }
+      );
+    </script>
+  </body>
+</html>
